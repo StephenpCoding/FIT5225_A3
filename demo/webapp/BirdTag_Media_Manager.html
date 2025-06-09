@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BirdTag Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://sdk.amazonaws.com/js/aws-sdk-2.902.0.min.js"></script>
+  <script
+    src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js@latest/dist/amazon-cognito-identity.min.js"></script>
+  <script src="https://unpkg.com/feather-icons"></script>
+</head>
+
+<body class="bg-gradient-to-br from-blue-100 to-green-200 min-h-screen font-sans">
+  <header class="bg-white bg-opacity-80 backdrop-blur-md shadow p-4 sticky top-0 z-10">
+    <div class="max-w-6xl mx-auto flex justify-between items-center">
+      <div class="flex items-center">
+        <img src="https://img.icons8.com/emoji/48/000000/bird-emoji.png" alt="Bird" class="w-10 h-10 mr-2">
+        <h1 class="text-2xl font-bold text-gray-800">BirdTag Dashboard</h1>
+      </div>
+      <button id="btn-logout" class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">Logout</button>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto p-6">
+    <section class="mb-10 bg-white bg-opacity-80 backdrop-blur-sm p-6 rounded-xl shadow">
+      <h2 class="text-xl font-semibold text-gray-800 mb-4">Upload Bird Media</h2>
+      <div class="flex flex-col md:flex-row gap-4 items-start md:items-center">
+        <input type="file" id="file-upload" class="flex-1 border rounded p-2" />
+        <button class="bg-green-500 text-white px-6 py-2 rounded hover:bg-green-600" id="upload-button">Upload</button>
+      </div>
+      <p class="text-sm text-gray-600 mt-2" id="upload-status"></p>
+    </section>
+
+    <section class="grid md:grid-cols-2 gap-6">
+      <div class="bg-white bg-opacity-80 backdrop-blur-sm p-6 rounded-xl shadow">
+        <h3 class="text-lg font-semibold text-gray-700 mb-3">Search by Tag & Count</h3>
+        <textarea id="search-tags-count" rows="3" class="w-full border rounded p-2 mb-3"
+          placeholder='e.g. { "crow": 2, "pigeon": 1 }'></textarea>
+        <button class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600" id="btn-search-count">Search</button>
+        <div id="results-tags-count" class="mt-4 grid grid-cols-2 gap-3"></div>
+      </div>
+      <div class="bg-white bg-opacity-80 backdrop-blur-sm p-6 rounded-xl shadow">
+        <h3 class="text-lg font-semibold text-gray-700 mb-3">Search by Single Tag</h3>
+        <input type="text" id="search-single-tag" class="w-full border rounded p-2 mb-3" placeholder="e.g. crow" />
+        <button class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600" id="btn-search-tag">Search</button>
+        <div id="results-single-tag" class="mt-4 grid grid-cols-2 gap-3"></div>
+      </div>
+    </section>
+
+    <section class="mt-10 bg-white bg-opacity-80 backdrop-blur-sm p-6 rounded-xl shadow">
+      <h3 class="text-lg font-semibold text-gray-700 mb-3">Lookup Original from Thumbnail</h3>
+      <div class="flex gap-3 flex-col md:flex-row items-start md:items-center">
+        <input type="text" id="thumb-url-input" class="flex-1 border rounded p-2" placeholder="Thumbnail S3 URL" />
+        <button class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+          id="btn-lookup-original">Lookup</button>
+      </div>
+      <p class="text-gray-700 mt-3" id="original-url-output"></p>
+    </section>
+  </main>
+
+  <footer class="text-center py-6 text-gray-600">BirdTag &copy; 2025 Monash Birdy Buddies</footer>
+
+  <script>
+    feather.replace();
+    const API_BASE = 'https://YOUR_API_ID.execute-api.ap-southeast-2.amazonaws.com/Prod';
+
+    // Logout (redirect to login page)
+    document.getElementById('btn-logout').onclick = () => {
+      localStorage.clear();
+      alert('Logged out');
+      location.href = 'login.html'; // or reload the main page if login section is hidden/shown
+    };
+
+    async function getToken() {
+      // Assuming user session was stored in localStorage or rehydrated
+      return localStorage.getItem('id_token');
+    }
+
+    document.getElementById('upload-button').onclick = async () => {
+      const file = document.getElementById('file-upload').files[0];
+      if (!file) return alert('Select a file.');
+      const token = await getToken();
+      const form = new FormData();
+      form.append('file', file);
+      const res = await fetch(`${API_BASE}/upload`, {
+        method: 'POST',
+        headers: { Authorization: token },
+        body: form
+      });
+      const text = await res.text();
+      document.getElementById('upload-status').textContent = text;
+    };
+
+    document.getElementById('btn-search-count').onclick = async () => {
+      const token = await getToken();
+      const body = document.getElementById('search-tags-count').value;
+      const res = await fetch(`${API_BASE}/search/by-count`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: token },
+        body
+      });
+      const data = await res.json();
+      displayResults('results-tags-count', data.links);
+    };
+
+    document.getElementById('btn-search-tag').onclick = async () => {
+      const tag = document.getElementById('search-single-tag').value;
+      const token = await getToken();
+      const res = await fetch(`${API_BASE}/search/by-tag?tag=${encodeURIComponent(tag)}`, {
+        headers: { Authorization: token }
+      });
+      const data = await res.json();
+      displayResults('results-single-tag', data.links);
+    };
+
+    document.getElementById('btn-lookup-original').onclick = async () => {
+      const thumbUrl = document.getElementById('thumb-url-input').value;
+      const token = await getToken();
+      const res = await fetch(`${API_BASE}/lookup/original?thumbUrl=${encodeURIComponent(thumbUrl)}`, {
+        headers: { Authorization: token }
+      });
+      const data = await res.json();
+      document.getElementById('original-url-output').textContent = data.originalUrl;
+    };
+
+    function displayResults(containerId, urls) {
+      const container = document.getElementById(containerId);
+      container.innerHTML = '';
+      urls.forEach(url => {
+        const img = document.createElement('img');
+        img.src = url;
+        img.className = 'rounded shadow object-cover w-full h-32';
+        container.appendChild(img);
+      });
+    }
+  </script>
+</body>
+
+</html>

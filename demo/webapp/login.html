@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BirdTag Media Manager</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Feather icons -->
+  <script src="https://unpkg.com/feather-icons"></script>
+</head>
+
+<body class="bg-gradient-to-r from-green-200 to-blue-100 min-h-screen font-sans">
+  <!-- Header -->
+  <header class="bg-white bg-opacity-70 backdrop-filter backdrop-blur-md shadow-md sticky top-0 z-10">
+    <div class="container mx-auto flex items-center justify-between p-4">
+      <div class="flex items-center">
+        <img src="https://img.icons8.com/emoji/48/000000/bird-emoji.png" alt="Bird" class="w-10 h-10 mr-2">
+        <h1 class="text-2xl font-bold text-gray-800">BirdTag</h1>
+      </div>
+      <div>
+        <button id="btn-show-login"
+          class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition mr-2">Login</button>
+        <button id="btn-show-signup"
+          class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition">Sign Up</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container mx-auto p-6">
+    <!-- Login Form -->
+    <section id="login-section"
+      class="max-w-md mx-auto bg-white bg-opacity-80 backdrop-filter backdrop-blur-sm rounded-2xl shadow-lg p-6 mt-12">
+      <h2 class="text-xl font-semibold text-gray-700 mb-4">User Login</h2>
+      <div class="mb-4">
+        <label for="login-email" class="block text-gray-600">Email</label>
+        <input type="email" id="login-email" class="w-full border border-gray-300 rounded-lg p-2"
+          placeholder="you@example.com" />
+      </div>
+      <div class="mb-6">
+        <label for="login-password" class="block text-gray-600">Password</label>
+        <input type="password" id="login-password" class="w-full border border-gray-300 rounded-lg p-2"
+          placeholder="Your password" />
+      </div>
+      <button id="btn-login"
+        class="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">Login</button>
+      <p class="mt-4 text-center text-gray-600">Don't have an account? <a href="#" id="link-to-signup"
+          class="text-green-500 hover:underline">Sign Up</a></p>
+    </section>
+
+    <!-- Sign Up Form -->
+    <section id="signup-section"
+      class="hidden max-w-md mx-auto bg-white bg-opacity-80 backdrop-filter backdrop-blur-sm rounded-2xl shadow-lg p-6 mt-12">
+      <h2 class="text-xl font-semibold text-gray-700 mb-4">User Registration</h2>
+      <div class="mb-4">
+        <label for="signup-firstname" class="block text-gray-600">First Name</label>
+        <input type="text" id="signup-firstname" class="w-full border border-gray-300 rounded-lg p-2"
+          placeholder="John" />
+      </div>
+      <div class="mb-4">
+        <label for="signup-lastname" class="block text-gray-600">Last Name</label>
+        <input type="text" id="signup-lastname" class="w-full border border-gray-300 rounded-lg p-2"
+          placeholder="Doe" />
+      </div>
+      <div class="mb-4">
+        <label for="signup-email" class="block text-gray-600">Email</label>
+        <input type="email" id="signup-email" class="w-full border border-gray-300 rounded-lg p-2"
+          placeholder="you@example.com" />
+      </div>
+      <div class="mb-4">
+        <label for="signup-password" class="block text-gray-600">Password</label>
+        <input type="password" id="signup-password" class="w-full border border-gray-300 rounded-lg p-2"
+          placeholder="Your password" />
+      </div>
+      <button id="btn-signup-submit"
+        class="w-full px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition">Create
+        Account</button>
+      <p class="mt-4 text-center text-gray-600">Already have an account? <a href="#" id="link-to-login"
+          class="text-blue-500 hover:underline">Login</a></p>
+    </section>
+
+    <!-- Protected Content -->
+    <section id="protected-content" class="hidden">
+      <!-- Existing Upload & Search UI goes here -->
+    </section>
+  </main>
+
+  <footer class="text-center text-gray-600 py-4">
+    BirdTag &copy; 2025 Monash Birdy Buddies
+  </footer>
+
+  <!-- Scripts -->
+  <script>
+    feather.replace();
+    // DOM Elements
+    const loginSec = document.getElementById('login-section');
+    const signupSec = document.getElementById('signup-section');
+    const protectedSec = document.getElementById('protected-content');
+    const btnShowLogin = document.getElementById('btn-show-login');
+    const btnShowSignup = document.getElementById('btn-show-signup');
+    const linkToSignup = document.getElementById('link-to-signup');
+    const linkToLogin = document.getElementById('link-to-login');
+
+    // Show login form
+    function showLogin() {
+      loginSec.classList.remove('hidden');
+      signupSec.classList.add('hidden');
+      protectedSec.classList.add('hidden');
+    }
+    // Show signup form
+    function showSignup() {
+      signupSec.classList.remove('hidden');
+      loginSec.classList.add('hidden');
+      protectedSec.classList.add('hidden');
+    }
+    // Show protected content
+    function showProtected() {
+      protectedSec.classList.remove('hidden');
+      loginSec.classList.add('hidden');
+      signupSec.classList.add('hidden');
+    }
+
+    btnShowLogin.onclick = showLogin;
+    btnShowSignup.onclick = showSignup;
+    linkToSignup.onclick = showSignup;
+    linkToLogin.onclick = showLogin;
+
+    // AWS Cognito setup
+    const poolData = { UserPoolId: 'YOUR_COGNITO_POOL_ID', ClientId: 'YOUR_COGNITO_CLIENT_ID' };
+    const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
+    let cognitoUser;
+
+    // Registration
+    document.getElementById('btn-signup-submit').onclick = () => {
+      const email = document.getElementById('signup-email').value;
+      const password = document.getElementById('signup-password').value;
+      const firstName = document.getElementById('signup-firstname').value;
+      const lastName = document.getElementById('signup-lastname').value;
+      const attributeList = [
+        new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'email', Value: email }),
+        new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'given_name', Value: firstName }),
+        new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'family_name', Value: lastName })
+      ];
+      userPool.signUp(email, password, attributeList, null, (err, result) => {
+        if (err) return alert(err.message || JSON.stringify(err));
+        alert('Registration successful! Please check your email to confirm.');
+        showLogin();
+      });
+    };
+
+    // Login
+    document.getElementById('btn-login').onclick = () => {
+      alert('Logged in (demo)');
+      window.location.href = 'BirdTag_Media_Manager.html';
+      return;
+
+      const email = document.getElementById('login-email').value;
+      const password = document.getElementById('login-password').value;
+      const authDetails = new AmazonCognitoIdentity.AuthenticationDetails({ Username: email, Password: password });
+      cognitoUser = new AmazonCognitoIdentity.CognitoUser({ Username: email, Pool: userPool });
+      cognitoUser.authenticateUser(authDetails, {
+        onSuccess: () => {
+          alert('Login successful!');
+          showProtected();
+          // Initialize protected UI (upload/search) here
+        },
+        onFailure: err => alert(err.message || JSON.stringify(err))
+      });
+    };
+
+    // Initialize
+    showLogin();
+  </script>
+</body>
+
+</html>
